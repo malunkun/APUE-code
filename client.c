@@ -20,88 +20,108 @@
 #include<arpa/inet.h>
 
 #define BUFFSIZE 1024
-#define PORT     8848
-#define IP       "127.0.0.1"
+#define MALLOCSIZE 100
+#define MSG "\0"//数据分割
+
 
 int connect_val = 0;
 int get_temper_val = 0;
 
-char *get_parameter(char *ipname);//获取参数，解析域名
-int connect_server (char *ip,char *port);//连接服务器
+
+char *get_parameter(char *hostname);
+int connect_server (char *ip,int port);//连接服务器
 int get_temper(float *temp);//获取温度
 
 int main(int argc,char *argv[])
 {
 	int optret;
-	char *ipaddr;
-	char *port;
-	char *hostname;
-	int cli_sockfd;
-	int temper;
-	float buf;
-	/*
-	while((optret = getopt(argc,argv,"i:p:")) != -1)
+	char *ip = NULL;
+	int  port = -1;
+	char *hostname = NULL;
+	int cli_sockfd = -1;
+	float temp = 0.000;
+	char buf[BUFFSIZE];
+	while((optret = getopt(argc,argv,"i:p:n:")) != -1)
 	{
 		switch(optret)
 		{
 			case 'i':
 				printf("option = i,the ip will be set=%s\n",optarg);
-				ipaddr = optarg;
+				ip = optarg;
 				break;
-			case 'h':
+			case 'n':
 				printf("option = h,the hostname will be set=%s\n",optarg);
 				hostname = optarg;
 				break;
 			case 'p':
 				printf("option = p,the port will be set=%s\n",optarg);
-				port = optarg;
+				port = atoi(optarg);
 				break;
 			default:
 				printf("please put into as:[-i]ip [-p]port or [-h]hostname [-p]port\n");
 				break;
 		}
-	} 
-	//ipaddr = get_parameter(hostname);
-	//if (NULL == ipaddr)
-	//{
-	//	perror("get_parameter() fail!");
-	//	return -1;
-	//}
-	printf("get_parameter() successful!\n");
-	*/
-	while(!connect_val)
+	}
+	while(1)
 	{
-		cli_sockfd = connect_server (ipaddr,port);
-		while(!get_temper_val && connect_val)
+		while(!connect_val)
 		{
-			if (get_temper(&buf) < 0)
+			if(hostname != NULL)
 			{
-				perror("get temperature fail!\n");
-				get_temper_val = 0;
+				ip = get_parameter(hostname);
+				printf("get the ip by host is:%s\n",ip);
 			}
-			printf("temp = %f",buf);
-			write(cli_sockfd,&buf,sizeof(buf));
-			read(cli_sockfd,&buf,sizeof(buf));
-			printf("here is read and write\n");
+			printf("ip:%s\n",ip);
+			cli_sockfd = connect_server (ip,port);
+			if (cli_sockfd < 0)
+			{
+				perror("connect fail!");
+				printf("fd = %d\n",cli_sockfd);
+				connect_val = 0;
+			}
+			if (cli_sockfd >0)
+			{
+				printf("connect successfully!\n");
+				printf("fd = %d\n",cli_sockfd);
+				connect_val = 1;
+			}
 			sleep(3);
 		}
-		close(cli_sockfd);
+		printf("the main will in file_io\n");
+			while(!get_temper_val && connect_val)
+			{
+				if (get_temper(&temp) < 0)
+				{
+					perror("get temperature fail!\n");
+					get_temper_val = 0;
+				}
+				printf("temp = %f\n",temp);
+				memset(buf,0,sizeof(buf));
+				gcvt(temp,8,buf);
+				printf("buf_temp = %s\n",buf);
+				write(cli_sockfd,&buf,sizeof(buf));
+				read(cli_sockfd,&buf,sizeof(buf));
+				printf("here is read and write\n");
+				sleep(5);
+			}
+			free(ip);
+			close(cli_sockfd);
+			printf("cloes sockfd\n");
+			sleep(3);
 	}
-	
-	return 0;
+		return 0;
 }
-
-
 
 //参数解析 域名解析
 char *get_parameter(char *hostname)
 {
-	char *ipaddr;
+	char *ipaddr = NULL;
 	struct hostent *gethost;
 	gethost = gethostbyname(hostname);
 	char ip[30];
+	ipaddr = (char *)malloc(sizeof(char)*30);
 	if (NULL == gethost)
-	{884
+	{
 		perror("get host fail!");
 		return NULL;
 	}
@@ -111,13 +131,12 @@ char *get_parameter(char *hostname)
 	return ipaddr;
 }
 
-
-
 //服务器连接
-int connect_server (char *ip,char *port)
+int connect_server (char *ip,int port)
 {
-	int sockfd = 0;
+	int sockfd = -1;
 	struct sockaddr_in cli_addr;
+	printf("the func connect_server ip = %s,port = %d\n",ip,port);
 	sockfd = socket(AF_INET,SOCK_STREAM,0);
 	if (sockfd < 0)
 	{
@@ -127,19 +146,17 @@ int connect_server (char *ip,char *port)
 	printf("socket successfully!\n");
 	memset(&cli_addr,0,sizeof(cli_addr));
 	cli_addr.sin_family= AF_INET;
-	cli_addr.sin_port = htons((uint16_t)port);
+	cli_addr.sin_port = htons((uint16_t)(port));
+	inet_aton(ip,&cli_addr.sin_addr);
 	printf("ready to connect!\n");
 	if ((connect(sockfd,(struct sockaddr *)&cli_addr,sizeof(cli_addr))) < 0)
 	{
 		perror("connect fail!");
-		connect_val = 0;
+		return -1;
 	}
 	printf("connect successful!\n");
-	connect_val = 1;
 	return sockfd;
 }
-
-
 
 //读取温度值
 int get_temper(float *temp)
