@@ -49,7 +49,6 @@ int main(int argc,char *argv)
 	{
 		 listen_fd = accept(sock_fd,(struct sockaddr *)&servaddr,(socklen_t *)&addrlen);
 		 printf("accept successful!\n");
-		 printf("........................listen_fd = %d in the main\n",listen_fd);
 		 pthread_start(listen_fd);
 	}
 	return 0;
@@ -57,7 +56,6 @@ int main(int argc,char *argv)
 void *pthread_func(void *args)
 {
 	int plisten_fd = (int)args;
-	//printf("....................listen_fd = %d in the pthread_func!\n",plisten_fd);
 	char buf[BUFFSIZE];
 	int rd;
 	while(1)
@@ -75,7 +73,7 @@ void *pthread_func(void *args)
 			perror("write fail!");
 			break;
 		}
-		printf("get the message:%s\n",buf);
+		printf("%s\n",buf);
 	} 
 		close(plisten_fd);
 		return NULL;
@@ -97,8 +95,6 @@ void pthread_start(int fd)
 		perror("pthread_attr_setdetachstate() fail!");
 	}
 	pthread_create(&tid,&thread_attr,pthread_func,(void *)fd);
-	//printf("create pthread successful!\n");
-	//printf("..................listen_fd = %d in the pthread_start!\n",fd);
 
 cleanup:
 	pthread_attr_destroy(&thread_attr);	
