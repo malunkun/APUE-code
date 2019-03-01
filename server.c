@@ -53,32 +53,9 @@ int main(int argc,char *argv)
 	}
 	return 0;
 }
-void *pthread_func(void *args)
-{
-	int plisten_fd = (int)args;
-	char buf[BUFFSIZE];
-	int rd;
-	while(1)
-	{
-		memset(buf,0,sizeof(buf));
-		//printf("clean buffer date successful!\n");	
-		rd = read(plisten_fd,buf,sizeof(buf));
-		if (rd < 0)
-		{
-			perror("read fail!");
-			break;
-		}
-		if(write(plisten_fd,buf,sizeof(buf)) < 0)
-		{
-			perror("write fail!");
-			break;
-		}
-		printf("%s\n",buf);
-	} 
-		close(plisten_fd);
-		return NULL;
-}
-void pthread_start(int fd)
+
+
+void pthread_start(int fd)//////
 {
 	pthread_t tid;
 	pthread_attr_t thread_attr;
@@ -100,3 +77,29 @@ cleanup:
 	pthread_attr_destroy(&thread_attr);	
 	printf("destroy attr successful!\n");
 }
+
+void *pthread_func(void *args)
+{
+	int plisten_fd = (int)args;
+	char buf[BUFFSIZE];
+	int rd;
+	while(1)
+	{
+		memset(buf,0,sizeof(buf));
+		rd = read(plisten_fd,buf,sizeof(buf));
+		if (rd <= 0)
+		{
+			perror("read fail!");
+			break;
+		}
+		if(write(plisten_fd,buf,sizeof(buf)) < 0)
+		{
+			perror("write fail!");
+			break;
+		}
+		printf("%s\n",buf);
+	} 
+		close(plisten_fd);
+		return NULL;
+}
+

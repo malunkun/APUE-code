@@ -113,8 +113,18 @@ int main(int argc,char *argv[])
 				memset(buf,0,sizeof(buf));
 				sprintf(buf,"%s/%.3f°C/%s",ID,temp,asctime(gmtime(&timep)));
 				printf("buf_temp = %s\n",buf);
-				write(cli_sockfd,&buf,sizeof(buf));
-				read(cli_sockfd,&buf,sizeof(buf));
+				if(write(cli_sockfd,&buf,sizeof(buf)) <0)
+				{
+					perror("write fail!");
+					connect_val = 0;
+					break;
+				}
+				if(read(cli_sockfd,&buf,sizeof(buf)) <= 0)
+				{
+					perror("read fail!");
+					connect_val = 0;
+					break;
+				}
 				sleep(5);
 			}
 			close(cli_sockfd);
