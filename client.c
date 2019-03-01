@@ -1,7 +1,7 @@
 /*************************************************************************
     > File Name: client.c
     > Author: malunkun
-    > Mail: malunkun<209446860qq.com> 
+    > Mail: malunkun<209446860@qq.com> 
     > Created Time: 2019年01月15日 星期二 14时13分53秒
  ************************************************************************/
 
@@ -18,17 +18,17 @@
 #include<unistd.h>
 #include<netdb.h>
 #include<arpa/inet.h>
+#include<time.h>
 
 #define BUFFSIZE 1024
 #define MALLOCSIZE 100
-#define MSG "\0"//数据分割
-
+#define ID  "Ma001"
 
 int connect_val = 0;
 int get_temper_val = 0;
 
 
-char *get_parameter(char *hostname);
+char *get_parameter(char *hostname);//参数解析
 int connect_server (char *ip,int port);//连接服务器
 int get_temper(float *temp);//获取温度
 
@@ -36,11 +36,14 @@ int main(int argc,char *argv[])
 {
 	int optret;
 	char *ip = NULL;
+	char ipArry[100];
 	int  port = -1;
 	char *hostname = NULL;
 	int cli_sockfd = -1;
 	float temp = 0.000;
 	char buf[BUFFSIZE];
+	time_t timep;
+	time (&timep);//获取时间
 	while((optret = getopt(argc,argv,"i:p:n:")) != -1)
 	{
 		switch(optret)
@@ -64,30 +67,41 @@ int main(int argc,char *argv[])
 	}
 	while(1)
 	{
-		while(!connect_val)
-		{
+			if((ip != NULL)&&(hostname != NULL))
+			{
+				printf("please input only  ip or hostname!\n");
+				return 0;
+			}			
 			if(hostname != NULL)
 			{
 				ip = get_parameter(hostname);
+				strncpy(ipArry,ip,sizeof(ipArry));
+				ip = (char *)ipArry;
 				printf("get the ip by host is:%s\n",ip);
+				hostname = NULL;
 			}
-			printf("ip:%s\n",ip);
-			cli_sockfd = connect_server (ip,port);
-			if (cli_sockfd < 0)
+
+			//printf("ip:%s\n",ip);
+			
+			while(!connect_val)
 			{
-				perror("connect fail!");
-				printf("fd = %d\n",cli_sockfd);
-				connect_val = 0;
+				cli_sockfd = connect_server (ip,port);
+				if (cli_sockfd < 0)
+				{
+					perror("connect fail!");
+					printf("fd = %d\n",cli_sockfd);
+					connect_val = 0;
+				}
+				if (cli_sockfd >0)
+				{
+					printf("connect successfully!\n");
+					connect_val = 1;
+				}
+				sleep(3);
 			}
-			if (cli_sockfd >0)
-			{
-				printf("connect successfully!\n");
-				printf("fd = %d\n",cli_sockfd);
-				connect_val = 1;
-			}
-			sleep(3);
-		}
 		printf("the main will in file_io\n");
+
+
 			while(!get_temper_val && connect_val)
 			{
 				if (get_temper(&temp) < 0)
@@ -97,17 +111,14 @@ int main(int argc,char *argv[])
 				}
 				printf("temp = %f\n",temp);
 				memset(buf,0,sizeof(buf));
-				gcvt(temp,8,buf);
+				sprintf(buf,"%s/%.3f°C/%s",ID,temp,asctime(gmtime(&timep)));
 				printf("buf_temp = %s\n",buf);
 				write(cli_sockfd,&buf,sizeof(buf));
 				read(cli_sockfd,&buf,sizeof(buf));
-				printf("here is read and write\n");
 				sleep(5);
 			}
-			free(ip);
 			close(cli_sockfd);
 			printf("cloes sockfd\n");
-			sleep(3);
 	}
 		return 0;
 }
@@ -118,16 +129,15 @@ char *get_parameter(char *hostname)
 	char *ipaddr = NULL;
 	struct hostent *gethost;
 	gethost = gethostbyname(hostname);
-	char ip[30];
-	ipaddr = (char *)malloc(sizeof(char)*30);
+	char ip[100];
 	if (NULL == gethost)
 	{
 		perror("get host fail!");
 		return NULL;
 	}
 	memset(ip,0,sizeof(ip));
-	ipaddr = inet_ntop(gethost->h_addrtype,gethost->h_addr_list,ip,sizeof(ip));
-	printf("dns ip is:%s\n",ipaddr);
+	ipaddr = (char *)inet_ntop(gethost->h_addrtype,gethost->h_addr_list[0],ip,sizeof(ip));
+	//printf("dns ip is:%s\n",ipaddr);
 	return ipaddr;
 }
 
@@ -154,7 +164,7 @@ int connect_server (char *ip,int port)
 		perror("connect fail!");
 		return -1;
 	}
-	printf("connect successful!\n");
+	//printf("connect successful!\n");
 	return sockfd;
 }
 
