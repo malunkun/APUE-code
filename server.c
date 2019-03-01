@@ -21,6 +21,7 @@ int main(int argc,char *argv)
 	socklen_t addrlen;
 	int backlog = 13;
 	sock_fd = socket(AF_INET,SOCK_STREAM,0);
+
 	if (sock_fd < 0)
 	{
 		perror("create socket fail!");
@@ -43,42 +44,41 @@ int main(int argc,char *argv)
 		return -3;
 	}
 	printf("listen successful!\n");
- while(1)
- {
- listen_fd = accept(sock_fd,(struct sockaddr *)&servaddr,(socklen_t *)&addrlen);
- printf("accept successful!\n");
- printf("........................listen_fd = %d in the main\n",listen_fd);
- pthread_start(listen_fd);
- }
+
+	while(1)
+	{
+		 listen_fd = accept(sock_fd,(struct sockaddr *)&servaddr,(socklen_t *)&addrlen);
+		 printf("accept successful!\n");
+		 printf("........................listen_fd = %d in the main\n",listen_fd);
+		 pthread_start(listen_fd);
+	}
 	return 0;
 }
 void *pthread_func(void *args)
 {
 	int plisten_fd = (int)args;
-	printf("....................listen_fd = %d in the pthread_func!\n",plisten_fd);
+	//printf("....................listen_fd = %d in the pthread_func!\n",plisten_fd);
 	char buf[BUFFSIZE];
 	int rd;
-	//close(plisten_fd);
-	printf("close listen successful!\n");
-	memset(buf,0,sizeof(buf));
-	printf("clean buffer date successful!\n");	
- while(1)
- {
-	rd = read(plisten_fd,buf,sizeof(buf));
-	if (rd < 0)
+	while(1)
 	{
-		perror("read fail!");
-		break;
-	}
-	if(write(plisten_fd,buf,sizeof(buf)) < 0)
-	{
-		perror("write fail!");
-		break;
-	}
-	printf("get the message:%s\n",buf);
- } 
-	close(plisten_fd);
-	return NULL;
+		memset(buf,0,sizeof(buf));
+		//printf("clean buffer date successful!\n");	
+		rd = read(plisten_fd,buf,sizeof(buf));
+		if (rd < 0)
+		{
+			perror("read fail!");
+			break;
+		}
+		if(write(plisten_fd,buf,sizeof(buf)) < 0)
+		{
+			perror("write fail!");
+			break;
+		}
+		printf("get the message:%s\n",buf);
+	} 
+		close(plisten_fd);
+		return NULL;
 }
 void pthread_start(int fd)
 {
@@ -97,8 +97,8 @@ void pthread_start(int fd)
 		perror("pthread_attr_setdetachstate() fail!");
 	}
 	pthread_create(&tid,&thread_attr,pthread_func,(void *)fd);
-	printf("create pthread successful!\n");
-	printf("..................listen_fd = %d in the pthread_start!\n",fd);
+	//printf("create pthread successful!\n");
+	//printf("..................listen_fd = %d in the pthread_start!\n",fd);
 
 cleanup:
 	pthread_attr_destroy(&thread_attr);	
