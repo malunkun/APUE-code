@@ -49,7 +49,6 @@ int main(int argc,char *argv)
 	{
 		 listen_fd = accept(sock_fd,(struct sockaddr *)&servaddr,(socklen_t *)&addrlen);
 		 printf("accept successful!\n");
-		 printf("........................listen_fd = %d in the main\n",listen_fd);
 		 pthread_start(listen_fd);
 	}
 	return 0;
