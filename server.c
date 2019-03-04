@@ -11,7 +11,8 @@
 #define PORT 9005
 #define BUFFSIZE 1024
 void *pthread_func(void *args);
-void pthread_start(int fd);
+void pthread_start(int fd);//开启线程
+int sqlite_func(char *temper);//存入数据库
 
 int main(int argc,char *argv)
 {
@@ -55,7 +56,7 @@ int main(int argc,char *argv)
 }
 
 
-void pthread_start(int fd)//////
+void pthread_start(int fd)//////线程开启
 {
 	pthread_t tid;
 	pthread_attr_t thread_attr;
@@ -82,6 +83,7 @@ void *pthread_func(void *args)
 {
 	int plisten_fd = (int)args;
 	char buf[BUFFSIZE];
+	int sqlite_ret;
 	int rd;
 	while(1)
 	{
@@ -98,8 +100,71 @@ void *pthread_func(void *args)
 			break;
 		}
 		printf("%s\n",buf);
+		sqlite_ret = sqlite_func((char *)&buf);
+		printf("数据库\n");
 	} 
 		close(plisten_fd);
 		return NULL;
 }
 
+int sqlite_func(char *temper)//存入数据库
+{
+	sqlite3 *db;
+	char *errmsg = 0;
+	int ret;
+	char ID_buf[20];
+	char temp_buf[20];
+	char data_buf[50];
+	int i = 0;
+	char *sql = "";
+	char *delim="|";
+	char *p=strtok(temper,delim);
+	if(NULL == p)
+	{
+		printf("strtok fail!\n");
+		return -1;
+	}
+	while(p != NULL)
+	{
+		printf("%s\n",p);
+		p = strtok(NULL,delim);
+		i++;
+		if(i=1)
+		{
+			strncpy(ID_buf,p,sizeof(p));
+		}
+		if(i=2)
+		{
+			strncpy(temp_buf,p,sizeof(p));
+		}
+		if(i=3)
+		{
+			strncpy(data_buf,p,sizeof(p));
+		}
+		if(i>3)
+			i=0;
+	}
+	ret = sqlite3_open("./server.db",&db);
+	if(ret != SQLITE_OK)
+	{
+		printf("open sqlite fail:%s",errmsg);
+		return -1;
+	}
+	sql = "create table if not exists server(id TEXT, temper REAL,data TEXT);";
+	ret = sqlite3_exec(db,sql,NULL,NULL,&errmsg);
+	if(ret != SQLITE_OK)
+	{
+		printf("create table fail:%s",errmsg);
+		return -1;
+	}
+	sql = "insert into server values(ID_buf,temp_buf,data_buf);"
+
+	ret = sqlite3_exec(db,sql,NULL,NULL,&errmsg);
+	if(ret != SQLITE_OK)
+	{
+		printf("insert values fail:%s",errmsg);
+		return -1;
+	}
+
+	return 0;
+}
