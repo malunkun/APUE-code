@@ -7,6 +7,10 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include "sqlite3.h"
 
 #define PORT 9005
@@ -15,7 +19,7 @@
 #define SYSERRFILE "./servererr.log"
 
 void *pthread_func(void *args);
-int my_syslog(int *sys_fd,int *syserr_fd)//日志系统记录
+int my_syslog(int *sys_fd,int *syserr_fd);//日志系统记录
 void pthread_start(int fd);//开启线程
 int sqlite_func(char *temper);//存入数据库
 
@@ -59,11 +63,16 @@ int main(int argc,char *argv)
 	}
 	printf("listen successful!\n");
 
+    fflush(stdout);
+    fflush(stderr);
+
 	while(1)
 	{
 		 listen_fd = accept(sock_fd,(struct sockaddr *)&servaddr,(socklen_t *)&addrlen);
 		 printf("accept successful!\n");
 		 pthread_start(listen_fd);
+         fflush(stdout);
+         fflush(stderr);
 	}
 	close(sys_fd);
 	close(syserr_fd);
@@ -142,6 +151,8 @@ void *pthread_func(void *args)
 		sqlite_ret = sqlite_func((char *)&buf);
 	} 
 		close(plisten_fd);
+        fflush(stdout);
+        fflush(stderr);
 		return NULL;
 }
 
@@ -196,5 +207,6 @@ int sqlite_func(char *temper)//存入数据库
 		printf("insert values fail:%s",errmsg);
 		return -1;
 	}
+    sqlite3_close(db);
 	return 0;
 }
