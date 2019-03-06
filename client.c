@@ -22,19 +22,29 @@
 
 #define BUFFSIZE 1024
 #define MALLOCSIZE 100
-#define ID  "Ma001"
+#define ID  "Ras_001"
+#define SYSLOGFILE "./client.log"
+#define SYSERRFILE "./clienterr.log"
 
-int connect_val = 0;
-int get_temper_val = 0;
+int go_stop = 0;
 
-
-char *get_parameter(char *hostname);//参数解析
+void hander(int num)
+{
+	go_stop = 1;
+}
+int my_syslog(int *sys_fd,int *syserr_fd);//日志系统
+int get_parameter(char *hostname,char *buf);//参数解析
 int connect_server (char *ip,int port);//连接服务器
 int get_temper(float *temp);//获取温度
 
 int main(int argc,char *argv[])
 {
+	int go_stop = 0;
+	int connect_val = 0;
+	int get_temper_val = 0;
 	int optret;
+	int sys_fd = -1;
+	int syserr_fd = -1;
 	char *ip = NULL;
 	char ipArry[100];
 	int  port = -1;
@@ -43,46 +53,43 @@ int main(int argc,char *argv[])
 	float temp = 0.000;
 	char buf[BUFFSIZE];
 	time_t timep;
+	signal(SIGQUIT,hander);
+	optret = my_syslog(&sys_fd,&syserr_fd);//开启日志
+	if(optret < 0)
+	{
+		printf("syslog open fail!\n");
+		return -1;
+	}
+	daemon(0,1);
 	time (&timep);//获取时间
 	while((optret = getopt(argc,argv,"i:p:n:")) != -1)
 	{
 		switch(optret)
 		{
 			case 'i':
-				printf("option = i,the ip will be set=%s\n",optarg);
-				ip = optarg;
-				break;
-			case 'n':
-				printf("option = h,the hostname will be set=%s\n",optarg);
+				printf("option = i,the ip or hostname will be set=%s\n",optarg);
 				hostname = optarg;
+				optret = get_parameter(hostname,ipArry);
+				if(optret < 0)
+				{
+					ip = hostname;
+				}
+				ip = (char *)ipArry;
 				break;
 			case 'p':
 				printf("option = p,the port will be set=%s\n",optarg);
 				port = atoi(optarg);
 				break;
 			default:
-				printf("please put into as:[-i]ip [-p]port or [-h]hostname [-p]port\n");
+				printf("please put into as:[-i]ip [-p]port\n");
 				break;
+				fflush(stdout);
+				fflush(stderr);
 		}
 	}
-	while(1)
-	{
-			if((ip != NULL)&&(hostname != NULL))
-			{
-				printf("please input only  ip or hostname!\n");
-				return 0;
-			}			
-			if(hostname != NULL)
-			{
-				ip = get_parameter(hostname);
-				strncpy(ipArry,ip,sizeof(ipArry));
-				ip = (char *)ipArry;
-				printf("get the ip by host is:%s\n",ip);
-				hostname = NULL;
-			}
 
-			//printf("ip:%s\n",ip);
-			
+	while(!go_stop)
+	{
 			while(!connect_val)
 			{
 				cli_sockfd = connect_server (ip,port);
@@ -98,10 +105,9 @@ int main(int argc,char *argv[])
 					connect_val = 1;
 				}
 				sleep(3);
+				fflush(stdout);
+				fflush(stderr);
 			}
-		printf("the main will in file_io\n");
-
-
 			while(!get_temper_val && connect_val)
 			{
 				if (get_temper(&temp) < 0)
@@ -111,7 +117,7 @@ int main(int argc,char *argv[])
 				}
 				printf("temp = %f\n",temp);
 				memset(buf,0,sizeof(buf));
-				sprintf(buf,"%s/%.3f°C/%s",ID,temp,asctime(gmtime(&timep)));
+				sprintf(buf,"%s|%.3f°C|%s",ID,temp,asctime(gmtime(&timep)));
 				printf("buf_temp = %s\n",buf);
 				if(write(cli_sockfd,&buf,sizeof(buf)) <0)
 				{
@@ -126,15 +132,44 @@ int main(int argc,char *argv[])
 					break;
 				}
 				sleep(5);
+				fflush(stdout);
+				fflush(stderr);
 			}
 			close(cli_sockfd);
 			printf("cloes sockfd\n");
+			fflush(stdout);
+			fflush(stderr);
+			close(sys_fd);
+			close(syserr_fd);
 	}
 		return 0;
 }
-
+//日志系统
+int my_syslog(int *sys_fd,int *syserr_fd)
+{
+	int fd;
+	fd = open(SYSLOGFILE,O_CREAT|O_RDWR,0644);
+	if(fd < 0)
+	{
+		perror("open syslog_file fail!\n");
+		return -1;
+	}
+	*sys_fd = dup2(fd,STDOUT_FILENO);
+	close(fd);
+	lseek(*sys_fd,0,SEEK_END);
+	fd = open(SYSERRFILE,O_CREAT|O_RDWR,0644);
+	if(fd < 0)
+	{
+		perror("open syserrlog_file fail!");
+		return -1;
+	}
+	*syserr_fd = dup2(fd,STDERR_FILENO);
+	close(fd);
+	lseek(*syserr_fd,0,SEEK_END);
+	return 0;
+}
 //参数解析 域名解析
-char *get_parameter(char *hostname)
+int get_parameter(char *hostname,char *buf)
 {
 	char *ipaddr = NULL;
 	struct hostent *gethost;
@@ -142,13 +177,13 @@ char *get_parameter(char *hostname)
 	char ip[100];
 	if (NULL == gethost)
 	{
-		perror("get host fail!");
-		return NULL;
+		perror("");
+		return -1;
 	}
 	memset(ip,0,sizeof(ip));
 	ipaddr = (char *)inet_ntop(gethost->h_addrtype,gethost->h_addr_list[0],ip,sizeof(ip));
-	//printf("dns ip is:%s\n",ipaddr);
-	return ipaddr;
+	strncpy(buf,ipaddr,sizeof(ip));
+	return 0;
 }
 
 //服务器连接
@@ -174,7 +209,6 @@ int connect_server (char *ip,int port)
 		perror("connect fail!");
 		return -1;
 	}
-	//printf("connect successful!\n");
 	return sockfd;
 }
 
