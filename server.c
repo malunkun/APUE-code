@@ -11,7 +11,11 @@
 
 #define PORT 9005
 #define BUFFSIZE 1024
+#define SYSLOGFILE "./server.log"
+#define SYSERRFILE "./servererr.log"
+
 void *pthread_func(void *args);
+int my_syslog(int *sys_fd,int *syserr_fd)//日志系统记录
 void pthread_start(int fd);//开启线程
 int sqlite_func(char *temper);//存入数据库
 
@@ -19,9 +23,17 @@ int main(int argc,char *argv)
 {
 	int sock_fd;
 	int listen_fd;
+	int sys_fd = -1;
+	int syserr_fd = -1;
+	int ret = -1;
 	struct sockaddr_in servaddr;
 	socklen_t addrlen;
 	int backlog = 13;
+	ret = my_syslog(&sys_fd,&syserr_fd);
+	if(ret < 0)
+	{
+		printf("open syslog fail!\n");
+	}
 	sock_fd = socket(AF_INET,SOCK_STREAM,0);
 
 	if (sock_fd < 0)
@@ -53,9 +65,35 @@ int main(int argc,char *argv)
 		 printf("accept successful!\n");
 		 pthread_start(listen_fd);
 	}
+	close(sys_fd);
+	close(syserr_fd);
 	return 0;
 }
 
+//日志系统
+int my_syslog(int *sys_fd,int *syserr_fd)
+{
+	int fd;
+	fd = open(SYSLOGFILE,O_CREAT|O_RDWR,0644);
+	if(fd < 0)
+	{
+		perror("open syslog_file fail!\n");
+		return -1;
+	}
+	*sys_fd = dup2(fd,STDOUT_FILENO);
+	close(fd);
+	lseek(*sys_fd,0,SEEK_END);
+	fd = open(SYSERRFILE,O_CREAT|O_RDWR,0644);
+	if(fd < 0)
+	{
+		perror("open syserrlog_file fail!");
+		return -1;
+	}
+	*syserr_fd = dup2(fd,STDERR_FILENO);
+	close(fd);
+	lseek(*syserr_fd,0,SEEK_END);
+	return 0;
+}
 
 void pthread_start(int fd)//////线程开启
 {
