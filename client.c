@@ -60,7 +60,7 @@ int main(int argc,char *argv[])
 		printf("syslog open fail!\n");
 		return -1;
 	}
-	daemon(0,1);
+	daemon(0,1);  //守护进程
 	time (&timep);//获取时间
 	while((optret = getopt(argc,argv,"i:p:n:")) != -1)
 	{
