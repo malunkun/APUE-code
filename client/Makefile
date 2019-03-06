@@ -4,4 +4,4 @@ CC = gcc
 $(target):$(obj)
 	$(CC) $(obj) -o $(target)
 clean:
-	rm -rf $(target)
+	rm -rf $(target) *.log
