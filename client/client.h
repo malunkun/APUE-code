@@ -17,6 +17,7 @@
 #include<string.h>
 #include<unistd.h>
 #include<netdb.h>
+#include <sys/types.h>
 #include<arpa/inet.h>
 #include<time.h>
 

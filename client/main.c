@@ -21,6 +21,8 @@ int main(int argc,char *argv[])
 	float temp = 0.000;
 	char buf[BUFFSIZE];
 	time_t timep;
+	mode_t mode = umask(0);
+	mkdir("./debug/",0777);
 	signal(SIGQUIT,hander);
 	optret = my_syslog(&sys_fd,&syserr_fd);//开启日志
 	if(optret < 0)
@@ -109,6 +111,7 @@ int main(int argc,char *argv[])
 			fflush(stderr);
 			close(sys_fd);
 			close(syserr_fd);
+			umask(mode);
 	}
 		return 0;
 }

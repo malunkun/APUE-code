@@ -1,4 +1,5 @@
 #include"server.h"
+int go_stop = 0;
 void hander(int num)
 {
 	go_stop = 1;
@@ -15,7 +16,11 @@ int main(int argc,char *argv)
 	int backlog = 13;
 	signal(SIGQUIT,hander);
 	mode_t mode = umask(0);
-	if(mkdir("./debug/",0777));
+	if(mkdir("./debug/",0777)<0)
+	{
+		printf("mkdir fail!\n");
+		return 0;
+	}
 	ret = my_syslog(&sys_fd,&syserr_fd);//日志系统
     daemon(1,1);//开启守护进程
 	if(ret < 0)
@@ -50,7 +55,7 @@ int main(int argc,char *argv)
     fflush(stdout);
     fflush(stderr);
 
-	while(1)
+	while(!go_stop)
 	{
 		 listen_fd = accept(sock_fd,(struct sockaddr *)&servaddr,(socklen_t *)&addrlen);
 		 printf("accept successful!\n");
