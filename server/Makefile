@@ -1,7 +1,10 @@
+src = $(wildcard ./*.c)
+obj = $(patsubst %.c,%.o,$(src))
 target = server
-obj = server.c
 CC = gcc
 $(target):$(obj)
-	@$(CC) $(obj) -o $(target) -lpthread -lsqlite3
+	@$(CC) $(obj) -o $(target) -lpthread -lsqlite3 -Wall
+%.o:%.c
+	@$(CC) -c $< -o $@ 
 clean:
-	@rm -rf *.log *.db server
+	@rm -rf *.o

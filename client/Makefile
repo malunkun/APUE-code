@@ -1,7 +1,10 @@
+src = $(wildcard ./*.c)
+obj = $(patsubst %.c,%.o,$(src))
 target = client
-obj = client.c
 CC = gcc
 $(target):$(obj)
-	@$(CC) $(obj) -o $(target)
+	@$(CC) $(obj) -o $(target) -Wall
+%.o:%.c
+	@$(CC) -c $< -o $@ 
 clean:
-	@rm -rf $(target) *.log
+	@rm -rf *.o
