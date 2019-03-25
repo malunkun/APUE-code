@@ -22,6 +22,7 @@
 
 #define SYSLOG "./log/client.log"
 #define ID "Ras_pi 001"
+#define TPATH "/home/bus/w1/devices/" 
 
 FILE *my_syslog(char *buf);//开启日志
 void my_syslog_close(FILE *fp);//关闭日志

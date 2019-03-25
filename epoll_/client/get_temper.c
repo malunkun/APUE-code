@@ -6,7 +6,7 @@ int get_temper(float *temp,FILE *fp)
 	char *ptr;
 	int rd;
 	char buf[1024];
-	char file_path[50] = "/home/bus/w1/devices/";
+	char file_path[50] = TPATH;
 	DIR *dirp;
 	struct dirent *direntp;
 	int found = -1;
