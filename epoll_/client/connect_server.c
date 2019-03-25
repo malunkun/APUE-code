@@ -14,7 +14,7 @@ int connect_server (char *ip,int port,FILE *fp)
 	cli_addr.sin_family= AF_INET;
 	cli_addr.sin_port = htons((uint16_t)(port));
 	inet_aton(ip,&cli_addr.sin_addr);
-	fprintf(fp,"准备连接%s\nport :%d\n",ip,port);
+	fprintf(fp,"准备连接%s\n端口%d\n",ip,port);
 	if ((connect(sockfd,(struct sockaddr *)&cli_addr,sizeof(cli_addr))) < 0)
 	{
 		fprintf(fp,"连接到:%s 端口:%d 失败:%s\n",ip,port,strerror(errno));

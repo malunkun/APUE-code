@@ -16,10 +16,10 @@ int main(int argc,char *argv[])
 	FILE *fp=NULL;
 	char ip[1024];
 	char send_buf[1024];
+	char time_buf[100];
 	time_t timep;
 	int con_fd = 0;
 	float temp = 0.00;
-	time (&timep);//获取时间
 	memset(log_buf,0,sizeof(log_buf));
 	fp = my_syslog(log_buf);
 	if(NULL == fp)
@@ -42,7 +42,7 @@ int main(int argc,char *argv[])
 			con_fd = connect_server(ip,port,fp);
 			if(con_fd<0)
 			{
-				printf("连接服务器失败!\n");
+				printf("连接服务 器失败!\n");
 				return -2;
 			}
 			no_connect = 1;
@@ -51,23 +51,24 @@ int main(int argc,char *argv[])
 		while(!no_get_temp)
 		{
 			if (get_temper(&temp,fp) < 0)
-				{ 
-					fprintf(fp, "温度获取失败:%s\n",strerror(errno));
+				{  
+					fprintf(fp , "温度获取失败:%s\n",strerror(errno));
 					no_get_temp = 0;
 				}
 				fprintf(fp,"获取到温度:%f\n",temp);
 				memset(send_buf,0,sizeof(send_buf));
-				sprintf(send_buf,"%s|%.3f°C|%s",ID,temp,asctime(gmtime(&timep)));
+				my_time(time_buf);//获取时间
+				sprintf(send_buf,"%s|%.3f°C|%s",ID,temp,time_buf);
 				fprintf(fp,"发送内容:%s\n",send_buf);
 				if(write(con_fd,&send_buf,sizeof(send_buf)) <0)
 				{
-					fprintf(fp,"w rite fail:%s\n",strerror(errno));
+					fprintf(fp," w rite fail:%s\n",strerror(errno));
 					no_connect = 0;
 					break;
 				}
 				if(read(con_fd,&send_buf,sizeof(send_buf)) <= 0)
 				{
-					fprintf(fp,"read fail:%s\n",strerror(errno));
+					fprintf(fp," read fail:%s\n",strerror(errno));
 					no_connect = 0;
 					break;
 				}
