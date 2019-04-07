@@ -27,7 +27,6 @@ int main(int argc,char *argv[])
 		printf("创建日志文件失败！\n");
 		return -1;
 	}
-	daemon(0,1);  //守护进程
 	memset(ip,0,sizeof(ip));
 	ret = get_parameter(argc,argv,&port,ip);
 	if(ret<0)
@@ -35,6 +34,7 @@ int main(int argc,char *argv[])
 		printf("参数不完整\n");
 		return -1;
 	}
+	daemon(0,1);  //守护进程
 	while(!no_running)
 	{
 		while(!no_connect)
@@ -42,12 +42,14 @@ int main(int argc,char *argv[])
 			con_fd = connect_server(ip,port,fp);
 			if(con_fd<0)
 			{
-				printf("连接服务 器失败!\n");
-				return -2;
+				fprintf(fp,"连接失败!\n");
+				sleep(30);
 			}
-			no_connect = 1;
-			fprintf(fp,"成功连接%s,端口:%d\n",ip,port);
-		}
+			else 
+			{
+				fprintf(fp,"成功连接%s,端口:%d\n",ip,port);
+				no_connect = 1;
+			}		}
 		while(!no_get_temp)
 		{
 			if (get_temper(&temp,fp) < 0)
@@ -62,17 +64,17 @@ int main(int argc,char *argv[])
 				fprintf(fp,"发送内容:%s\n",send_buf);
 				if(write(con_fd,&send_buf,sizeof(send_buf)) <0)
 				{
-					fprintf(fp," w rite fail:%s\n",strerror(errno));
+					fprintf(fp,"write fail:%s\n",strerror(errno));
 					no_connect = 0;
 					break;
 				}
 				if(read(con_fd,&send_buf,sizeof(send_buf)) <= 0)
 				{
-					fprintf(fp," read fail:%s\n",strerror(errno));
+					fprintf(fp,"read fail:%s\n",strerror(errno));
 					no_connect = 0;
 					break;
 				}
-				sleep(5);
+				sleep(10);
 		}
 	}
 	close(con_fd);
