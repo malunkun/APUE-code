@@ -5,10 +5,17 @@
     > Created Time: 2019年03月25日 星期一 16时20分00秒
  ************************************************************************/
 #include"client.h"
+
+int no_running = 0;
+void sighandle(int num)//
+{
+	no_running = 1;
+}
+
+
 int main(int argc,char *argv[])
 {
 	char log_buf[128];
-	int no_running = 0;
 	int no_connect = 0;
 	int no_get_temp= 0;
 	int port=0;
@@ -34,6 +41,7 @@ int main(int argc,char *argv[])
 		printf("参数不完整\n");
 		return -1;
 	}
+	signal(SIGINT,sighandle);//注册信号
 	daemon(0,1);  //守护进程
 	while(!no_running)
 	{
