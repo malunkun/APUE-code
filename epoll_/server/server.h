@@ -21,7 +21,6 @@
 #define BUFFSIZE 1024
 #define SYSLOG "./log/server.log"
 
-int socket_bind(char *msg);
-//初始化socket，启用监听
+int socket_bind(char *msg);//初始化socket，启用监听
 int epoll_set(int listen_fd,struct sockaddr_in *addr,socklen_t *addrlen,struct epoll_event *event,char *msg);//epoll初始化
 int handle_events(int epfd,int listenfd,int eventnum,struct epoll_event *event,char *sendbuf);
