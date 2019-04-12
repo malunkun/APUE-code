@@ -41,7 +41,10 @@ int main(int argc,char *argv[])
 		printf("参数不完整\n");
 		return -1;
 	}
-	signal(SIGINT,sighandle);//注册信号
+	signal(SIGINT,sighandle);//注册INT信号
+	signal(SIGTERM,sighandle);//注册TERM信号
+	signal(SIGQUIT,sighandle);//注册QUIT信号
+
 	daemon(0,1);  //守护进程
 	while(!no_running)
 	{
